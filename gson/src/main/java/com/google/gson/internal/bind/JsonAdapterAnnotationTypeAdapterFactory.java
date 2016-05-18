@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializer;
 import com.google.gson.TypeAdapter;
 import com.google.gson.TypeAdapterFactory;
 import com.google.gson.annotations.JsonAdapter;
@@ -98,6 +100,18 @@ public final class JsonAdapterAnnotationTypeAdapterFactory implements TypeAdapte
     } else if (TypeAdapterFactory.class.isAssignableFrom(value)) {
       TypeAdapterFactory factory = getTypeAdapterFactory(rawType, annotation, constructorConstructor);
       typeAdapter = factory == null ? null : factory.create(gson, type);
+    } else if (JsonSerializer.class.isAssignableFrom(value) || JsonDeserializer.class.isAssignableFrom(value)) {
+      JsonSerializer serializer = null;
+      if (JsonSerializer.class.isAssignableFrom(value)) {
+        Class<JsonSerializer<?>> serializerClass = (Class<JsonSerializer<?>>) value;
+        serializer = constructorConstructor.get(TypeToken.get(serializerClass)).construct();
+      }
+      JsonDeserializer deserializer = null;
+      if (JsonDeserializer.class.isAssignableFrom(value)) {
+        Class<JsonDeserializer<?>> deserializerClass = (Class<JsonDeserializer<?>>) value;
+        deserializer = constructorConstructor.get(TypeToken.get(deserializerClass)).construct();
+      }
+      typeAdapter = new TreeTypeAdapter(serializer, deserializer, gson, type, null);
     } else {
       throw new IllegalArgumentException(
           "@JsonAdapter value must be TypeAdapter, TypeAdapterFactory, JsonSerializer or JsonDeserializer reference.");
